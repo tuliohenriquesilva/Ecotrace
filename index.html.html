@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EcoTrace — Rastreabilidade de Lixo Eletrônico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF2ED; --bg-alt:#E3E9E1; --surface:#FFFFFF;
+    --ink:#132420; --ink-soft:#4B5C55; --line:#C9D3C6;
+    --pcb:#1F4B3D; --pcb-deep:#0E2622; --copper:#B8703C; --copper-soft:#D99A66;
+    --amber:#C98A2B;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+    box-sizing:border-box;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1613; --bg-alt:#121C18; --surface:#182420;
+      --ink:#E9EFE9; --ink-soft:#9FB0A8; --line:#2A3A34;
+      --pcb:#2E6B54; --pcb-deep:#0E2622; --copper:#D99A66; --copper-soft:#B8703C; --amber:#E0A23F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1613; --bg-alt:#121C18; --surface:#182420;
+    --ink:#E9EFE9; --ink-soft:#9FB0A8; --line:#2A3A34;
+    --pcb:#2E6B54; --pcb-deep:#0E2622; --copper:#D99A66; --copper-soft:#B8703C; --amber:#E0A23F;
+  }
+  html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px)); scroll-behavior:smooth;}
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.disp{font-family:'Space Grotesk',system-ui,sans-serif; font-weight:600; letter-spacing:-0.01em; color:var(--ink); margin:0;}
+  a{color:inherit;}
+  img{max-width:100%;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px;}
+  .row{overflow-x:auto;}
+
+  /* NAV */
+  nav{position:sticky; top:0; top:env(safe-area-inset-top,0px); z-index:50; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);}
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:64px;}
+  .brand{display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:700; font-size:1.15rem;}
+  .brand-mark{width:28px; height:28px; flex:none;}
+  nav ul{list-style:none; display:flex; gap:28px; margin:0; padding:0; font-size:.92rem; color:var(--ink-soft);}
+  nav ul a{text-decoration:none;}
+  nav ul a:hover{color:var(--ink);}
+  .nav-cta{display:inline-flex; align-items:center; gap:8px; background:var(--pcb); color:#fff; padding:9px 18px; border-radius:100px; text-decoration:none; font-size:.88rem; font-weight:600; white-space:nowrap;}
+  .navlinks-mobile{display:none;}
+  @media (max-width:760px){ nav ul{display:none;} }
+
+  /* HERO */
+  .hero{background:var(--pcb-deep); color:#EEF2ED; position:relative; overflow:hidden;}
+  .hero .wrap{padding:88px 24px 64px; position:relative; z-index:2;}
+  .hero-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:center;}
+  @media (max-width:860px){ .hero-grid{grid-template-columns:1fr;} .hero .wrap{padding:56px 20px 40px;} }
+  .eyebrow{color:var(--copper-soft); font-size:.85rem; font-weight:600; margin-bottom:14px;}
+  .hero h1{font-size:clamp(2.1rem, 4.6vw, 3.4rem); line-height:1.06; color:#fff; max-width:14ch;}
+  .hero p.lead{margin-top:20px; color:#C6D2CB; font-size:1.08rem; max-width:46ch;}
+  .hero-actions{display:flex; gap:14px; margin-top:32px; flex-wrap:wrap;}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:100px; font-weight:600; font-size:.95rem; text-decoration:none; border:1px solid transparent; cursor:pointer;}
+  .btn-copper{background:var(--copper); color:#fff;}
+  .btn-copper:hover{background:var(--copper-soft);}
+  .btn-ghost{border-color:#3E5850; color:#EEF2ED;}
+  .btn-ghost:hover{border-color:#6C877D;}
+  .btn-dark{background:var(--pcb); color:#fff;}
+  .btn-dark:hover{background:#183a2f;}
+
+  .trace-art{width:100%; height:auto;}
+  .trace-line{fill:none; stroke:var(--copper-soft); stroke-width:2; stroke-dasharray:6 420; stroke-dashoffset:0; animation:draw 3.2s ease-in-out forwards;}
+  @keyframes draw{ from{stroke-dashoffset:420; stroke-dasharray:420;} to{stroke-dashoffset:0; stroke-dasharray:420;} }
+  @media (prefers-reduced-motion:reduce){ .trace-line{animation:none; stroke-dasharray:none;} }
+  .pad{fill:var(--copper-soft);}
+  .pad-green{fill:#4F9B7C;}
+
+  /* SECTION helpers */
+  section{padding:76px 0;}
+  .section-head{max-width:640px; margin-bottom:44px;}
+  .section-head .eyebrow{color:var(--copper);}
+  .section-head h2{font-size:clamp(1.6rem,3vw,2.2rem); color:var(--ink);}
+  .section-head p{color:var(--ink-soft); margin-top:12px; font-size:1.02rem;}
+  .alt{background:var(--bg-alt);}
+
+  /* INSIGHT strip */
+  .insights{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+  @media (max-width:760px){ .insights{grid-template-columns:1fr;} }
+  .insight-card{background:var(--surface); padding:28px 26px;}
+  .insight-card .num{font-family:'Space Grotesk'; font-size:2rem; color:var(--copper); font-weight:700; line-height:1;}
+  .insight-card p{margin:10px 0 0; color:var(--ink-soft); font-size:.94rem;}
+
+  /* STEPS */
+  .steps{display:grid; grid-template-columns:repeat(4,1fr); gap:0; position:relative;}
+  @media (max-width:860px){ .steps{grid-template-columns:1fr; gap:28px;} }
+  .step{position:relative; padding:0 22px 0 0;}
+  .step:first-child{padding-left:0;}
+  .step-num{font-family:'Space Grotesk'; color:var(--copper); font-size:.85rem; font-weight:700; border:1px solid var(--copper); width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:16px;}
+  .step h3{font-size:1.08rem; margin-bottom:8px;}
+  .step p{color:var(--ink-soft); font-size:.92rem;}
+  .step-connector{position:absolute; top:15px; left:100%; width:22px; height:1px; background:var(--line);}
+  @media (max-width:860px){ .step-connector{display:none;} }
+
+  /* FEATURES */
+  .features{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  @media (max-width:860px){ .features{grid-template-columns:1fr 1fr;} }
+  @media (max-width:560px){ .features{grid-template-columns:1fr;} }
+  .feature{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px; transition:border-color .15s;}
+  .feature:hover{border-color:var(--copper-soft);}
+  .feature .ico{width:34px; height:34px; margin-bottom:16px;}
+  .feature h3{font-size:1.02rem; margin-bottom:8px;}
+  .feature p{color:var(--ink-soft); font-size:.9rem;}
+
+  /* DEMO */
+  .demo{background:var(--surface); border:1px solid var(--line); border-radius:20px; overflow:hidden; display:grid; grid-template-columns:1fr 1fr;}
+  @media (max-width:860px){ .demo{grid-template-columns:1fr;} }
+  .demo-form{padding:32px; border-right:1px solid var(--line);}
+  @media (max-width:860px){ .demo-form{border-right:none; border-bottom:1px solid var(--line);} }
+  .demo-form h3, .demo-panel h3{font-size:1.05rem; margin-bottom:4px;}
+  .demo-form p.hint, .demo-panel p.hint{color:var(--ink-soft); font-size:.85rem; margin:4px 0 20px;}
+  label{display:block; font-size:.85rem; font-weight:600; margin-bottom:6px; color:var(--ink-soft);}
+  select, input[type=number]{width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--ink); font-family:inherit; font-size:.94rem; margin-bottom:16px;}
+  .demo-panel{padding:32px; background:var(--bg-alt);}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px;}
+  .stat{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+  .stat .v{font-family:'Space Grotesk'; font-size:1.3rem; font-weight:700; color:var(--pcb);}
+  :root[data-theme="dark"] .stat .v, @media (prefers-color-scheme:dark){ .stat .v{color:var(--copper-soft);} }
+  .stat .l{font-size:.78rem; color:var(--ink-soft); margin-top:2px;}
+  .queue{list-style:none; margin:0; padding:0; max-height:190px; overflow-y:auto;}
+  .queue li{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:.88rem;}
+  .queue li:last-child{border-bottom:none;}
+  .queue .tag{color:var(--copper); font-weight:600; font-size:.78rem;}
+  .queue-empty{color:var(--ink-soft); font-size:.88rem; padding:14px 0;}
+
+  /* MODEL / SECURITY */
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start;}
+  @media (max-width:860px){ .split{grid-template-columns:1fr;} }
+  .model-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px;}
+  .model-card h3{font-size:1.15rem; margin-bottom:10px;}
+  .model-card ul{margin:16px 0 0; padding:0; list-style:none;}
+  .model-card li{padding-left:22px; position:relative; margin-bottom:10px; font-size:.92rem; color:var(--ink-soft);}
+  .model-card li::before{content:"→"; position:absolute; left:0; color:var(--copper);}
+
+  .security{background:var(--pcb-deep); color:#EDF2ED; border-radius:20px; padding:40px;}
+  .security h3{color:#fff; font-size:1.2rem; margin-bottom:10px;}
+  .security p{color:#C6D2CB; font-size:.94rem; margin-bottom:20px;}
+  .security ul{list-style:none; margin:0; padding:0; display:grid; gap:12px;}
+  .security li{display:flex; gap:10px; font-size:.88rem; color:#DCE6DF;}
+  .security li b{color:#fff;}
+
+  /* CTA */
+  .cta{background:var(--pcb); border-radius:24px; padding:56px 40px; text-align:center; color:#fff;}
+  .cta h2{color:#fff; font-size:clamp(1.5rem,3vw,2rem); max-width:26ch; margin:0 auto;}
+  .cta p{color:#D3E1D9; margin:14px auto 28px; max-width:44ch;}
+  .cta .hero-actions{justify-content:center;}
+
+  footer{border-top:1px solid var(--line); padding:40px 0; margin-top:20px;}
+  footer .wrap{display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; align-items:center; color:var(--ink-soft); font-size:.85rem;}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--pcb-deep); color:#fff; padding:12px 22px; border-radius:100px; font-size:.88rem; opacity:0; pointer-events:none; transition:all .25s; z-index:80;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* LOCALIZADOR */
+  .locator{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:36px 40px;}
+  @media (max-width:640px){ .locator{padding:28px 22px;} }
+  .locator-row{display:flex; gap:12px; margin-top:22px; flex-wrap:wrap;}
+  .locator-row input{flex:1; min-width:200px; padding:13px 16px; border:1px solid var(--line); border-radius:100px; background:var(--bg); color:var(--ink); font-family:inherit; font-size:.95rem;}
+  .locator-row input:focus{outline:2px solid var(--copper-soft); outline-offset:1px;}
+  .locator-chips{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .chip{border:1px solid var(--line); background:var(--bg); color:var(--ink-soft); padding:7px 14px; border-radius:100px; font-size:.82rem; cursor:pointer;}
+  .chip:hover{border-color:var(--copper-soft); color:var(--ink);}
+  .locator-note{display:flex; gap:10px; margin-top:20px; padding:14px 16px; background:var(--bg-alt); border-radius:10px; font-size:.84rem; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="none" stroke="var(--copper)" stroke-width="2"/><path d="M14 6v5M14 17v5M6 14h5M17 14h5M9 9l3 3M19 19l-3-3M19 9l-3 3M9 19l3-3" stroke="var(--pcb)" stroke-width="2" stroke-linecap="round"/></svg>
+      EcoTrace
+    </div>
+    <ul>
+      <li><a href="#problema">O problema</a></li>
+      <li><a href="#como-funciona">Como funciona</a></li>
+      <li><a href="#funcionalidades">Funcionalidades</a></li>
+      <li><a href="#demo">Demonstração</a></li>
+      <li><a href="#localizador">Pontos de coleta</a></li>
+      <li><a href="#seguranca">Segurança</a></li>
+    </ul>
+    <a class="nav-cta" href="#demo">Agendar coleta</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">RASTREABILIDADE &amp; LOGÍSTICA REVERSA DE REEE</div>
+      <h1>Cada equipamento descartado, do estoque ao reciclador certificado.</h1>
+      <p class="lead">O EcoTrace centraliza o agendamento de coleta, o rastreamento e a emissão de certificados de destinação para o lixo eletrônico da sua empresa ou instituição — em uma plataforma gratuita, feita para quem não tem tempo a perder com isso.</p>
+      <div class="hero-actions">
+        <a class="btn btn-copper" href="#demo">Testar o agendamento</a>
+        <a class="btn btn-ghost" href="https://docs.google.com/forms/d/e/1FAIpQLSfd-LCjJfY6FV60UEYstLYfOwKkGRP1Yn6cM0b-yvD_n9vkSA/viewform?usp=header" target="_blank" rel="noopener">Responder à pesquisa</a>
+      </div>
+    </div>
+    <svg class="trace-art" viewBox="0 0 420 360" xmlns="http://www.w3.org/2000/svg">
+      <path class="trace-line" d="M20 300 L90 300 L90 220 L170 220 L170 100 L260 100 L260 180 L340 180 L340 60 L400 60"/>
+      <circle class="pad" cx="20" cy="300" r="7"/>
+      <circle class="pad-green" cx="90" cy="220" r="6"/>
+      <circle class="pad" cx="170" cy="100" r="6"/>
+      <circle class="pad-green" cx="260" cy="180" r="6"/>
+      <circle class="pad" cx="340" cy="60" r="6"/>
+      <circle class="pad-green" cx="400" cy="60" r="8"/>
+      <text x="0" y="330" fill="#8FA79B" font-family="Inter" font-size="12">Estoque</text>
+      <text x="330" y="45" fill="#8FA79B" font-family="Inter" font-size="12">Reciclador</text>
+    </svg>
+  </div>
+</header>
+
+<section id="problema" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">O QUE OUVIMOS DE ORGANIZAÇÕES REAIS</div>
+      <h2>O descarte de eletrônicos ainda é feito no improviso</h2>
+      <p>Na fase inicial de escuta com organizações públicas e privadas, um padrão se repetiu: falta tempo para organizar o descarte, os equipamentos se acumulam, e a insegurança sobre o que fazer com dados em HDs e SSDs trava qualquer decisão.</p>
+    </div>
+    <div class="insights">
+      <div class="insight-card">
+        <div class="num">Nº 1</div>
+        <p>Falta de tempo para organizar e agendar a coleta foi apontada como o maior desafio no descarte correto de REEE.</p>
+      </div>
+      <div class="insight-card">
+        <div class="num">100%</div>
+        <p>das organizações consultadas citaram a segurança e destruição de dados de HDs/SSDs como principal obstáculo à adoção de uma plataforma.</p>
+      </div>
+      <div class="insight-card">
+        <div class="num">2 em 2</div>
+        <p>não possuem política formal de gestão de REEE hoje, mas consideram relevante apresentar relatórios ESG no futuro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="como-funciona">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">FLUXO</div>
+      <h2>Do cadastro ao certificado, em quatro etapas</h2>
+      <p>Pensado para equipes sem tempo sobrando: cada etapa leva minutos, não reuniões.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><h3>Cadastre os itens</h3><p>Formulário simples com categoria e quantidade — computadores, periféricos, monitores e mais.</p><div class="step-connector"></div></div>
+      <div class="step"><div class="step-num">2</div><h3>Agende a coleta</h3><p>Escolha data e local; um parceiro reciclador certificado confirma a retirada.</p><div class="step-connector"></div></div>
+      <div class="step"><div class="step-num">3</div><h3>Acompanhe em tempo real</h3><p>Painel interativo ou notificações por e-mail mostram cada etapa da destinação.</p><div class="step-connector"></div></div>
+      <div class="step"><div class="step-num">4</div><h3>Receba o certificado</h3><p>Certificado de destinação correta em PDF, pronto para relatórios ESG.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="funcionalidades" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">FUNCIONALIDADES</div>
+      <h2>Construído em torno do que as organizações pediram</h2>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>
+        <h3>Agendamento simplificado</h3>
+        <p>Marque a coleta no local em poucos cliques, sem trocar e-mails com transportadoras.</p>
+      </div>
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="var(--pcb)" stroke-width="1.6"><path d="M7 3v18M7 3l7 4-7 4"/><rect x="14" y="10" width="7" height="11" rx="1"/></svg>
+        <h3>Certificado automático</h3>
+        <p>Emissão de PDF com o certificado de destinação correta assim que o item é processado.</p>
+      </div>
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" stroke-width="1.6"><path d="M4 19V9M12 19V5M20 19v-7"/></svg>
+        <h3>Painel interativo</h3>
+        <p>Volume descartado, CO₂ evitado e status de cada lote, atualizados em tempo real.</p>
+      </div>
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="var(--pcb)" stroke-width="1.6"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>
+        <h3>Notificações por e-mail</h3>
+        <p>Aviso automático a cada mudança de status, sem precisar checar o painel.</p>
+      </div>
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" stroke-width="1.6"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+        <h3>Destruição de dados auditada</h3>
+        <p>Rastreio específico para HDs e SSDs, com registro do processo de sanitização.</p>
+      </div>
+      <div class="feature">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="var(--pcb)" stroke-width="1.6"><path d="M4 4h16v4H4zM4 10h10v4H4zM4 16h7v4H4z"/></svg>
+        <h3>Relatórios ESG</h3>
+        <p>Exporte indicadores ambientais prontos para relatórios de sustentabilidade.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">EXPERIMENTE</div>
+      <h2>Simule o agendamento de uma coleta</h2>
+      <p>Um recorte de como o cadastro funciona na prática — adicione itens e veja o painel se atualizar.</p>
+    </div>
+    <div class="demo">
+      <div class="demo-form">
+        <h3>Cadastrar item</h3>
+        <p class="hint">Categoria e quantidade — o mesmo formulário simples pedido pelas organizações entrevistadas.</p>
+        <label for="cat">Categoria do equipamento</label>
+        <select id="cat">
+          <option value="Computadores, notebooks e gabinetes|18">Computadores, notebooks e gabinetes</option>
+          <option value="Monitores e telas|7">Monitores e telas</option>
+          <option value="Periféricos e cabos|0.6">Periféricos e cabos (teclados, mouses)</option>
+          <option value="HDs e SSDs|0.2">HDs e SSDs</option>
+          <option value="Impressoras e multifuncionais|9">Impressoras e multifuncionais</option>
+        </select>
+        <label for="qty">Quantidade</label>
+        <input type="number" id="qty" min="1" value="1">
+        <button class="btn btn-dark" style="width:100%; justify-content:center;" onclick="addItem()">Adicionar à coleta</button>
+      </div>
+      <div class="demo-panel">
+        <h3>Painel da coleta</h3>
+        <p class="hint">Estimativas ilustrativas de peso e CO₂ evitado, calculadas a partir dos itens cadastrados.</p>
+        <div class="stat-grid">
+          <div class="stat"><div class="v" id="statKg">0 kg</div><div class="l">Peso estimado</div></div>
+          <div class="stat"><div class="v" id="statCo2">0 kg</div><div class="l">CO₂ evitado (est.)</div></div>
+        </div>
+        <ul class="queue" id="queue">
+          <li class="queue-empty">Nenhum item cadastrado ainda.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="modelo">
+  <div class="wrap split">
+    <div class="model-card">
+      <div class="eyebrow">MODELO DE SERVIÇO</div>
+      <h3>Gratuito para a sua empresa</h3>
+      <p style="color:var(--ink-soft); font-size:.94rem;">Sem mensalidade e sem custo de implantação. A plataforma se sustenta através de parceiros recicladores certificados, que pagam para acessar volumes de coleta qualificados.</p>
+      <ul>
+        <li>Sem taxa de cadastro ou de agendamento</li>
+        <li>Rede de recicladores auditados e certificados</li>
+        <li>Custo baseado em volume, pago pelo parceiro reciclador</li>
+      </ul>
+    </div>
+    <div class="security" id="seguranca">
+      <h3>Segurança de dados em primeiro lugar</h3>
+      <p>O maior receio apontado por quem respondeu à nossa pesquisa foi o destino dos dados armazenados em HDs e SSDs. É o ponto que tratamos com mais rigor.</p>
+      <ul>
+        <li><b>Rastreio individual</b> — cada unidade de armazenamento recebe um código próprio no processo.</li>
+        <li><b>Sanitização auditada</b> — registro do método de destruição ou apagamento seguro.</li>
+        <li><b>Certificado específico</b> — comprovante de destruição de dados, separado do certificado geral de descarte.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="localizador">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">ENCONTRAR UM PONTO PRÓXIMO</div>
+      <h2>Não quer agendar coleta? Veja pontos de descarte perto de você</h2>
+      <p>Digite sua cidade e o EcoTrace abre o Google Maps já pesquisando por pontos de coleta de lixo eletrônico na região — com resultados reais e atualizados.</p>
+    </div>
+    <div class="locator">
+      <label for="cityInput">Sua cidade</label>
+      <div class="locator-row">
+        <input type="text" id="cityInput" placeholder="Ex.: Belo Horizonte, MG" autocomplete="address-level2" oninput="updateMapsLink()" onkeydown="if(event.key==='Enter'){document.getElementById('mapsBtn').click();}">
+        <a class="btn btn-copper" id="mapsBtn" href="https://www.google.com/maps/search/?api=1&amp;query=ponto+de+coleta+de+lixo+eletr%C3%B4nico" target="_blank" rel="noopener noreferrer">Ver pontos no mapa</a>
+      </div>
+      <div class="locator-chips">
+        <button class="chip" type="button" onclick="quickCity('São Paulo, SP')">São Paulo, SP</button>
+        <button class="chip" type="button" onclick="quickCity('Belo Horizonte, MG')">Belo Horizonte, MG</button>
+        <button class="chip" type="button" onclick="quickCity('Rio de Janeiro, RJ')">Rio de Janeiro, RJ</button>
+        <button class="chip" type="button" onclick="quickCity('Curitiba, PR')">Curitiba, PR</button>
+      </div>
+      <div class="locator-note">
+        <span>ℹ️</span>
+        <span>O botão leva direto ao Google Maps, mostrando ecopontos, cooperativas e assistências técnicas autorizadas a receber eletrônicos na cidade informada. Se o link não abrir dentro deste app, toque em "abrir no navegador" quando essa opção aparecer.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta">
+      <h2>Ajude a moldar o EcoTrace antes do lançamento</h2>
+      <p>A pesquisa está aberta para organizações públicas e privadas. Suas respostas definem quais funcionalidades entram na primeira versão.</p>
+      <div class="hero-actions">
+        <a class="btn btn-copper" href="https://docs.google.com/forms/d/e/1FAIpQLSfd-LCjJfY6FV60UEYstLYfOwKkGRP1Yn6cM0b-yvD_n9vkSA/viewform?usp=header" target="_blank" rel="noopener">Responder à pesquisa</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brand" style="font-size:1rem;">
+      <svg class="brand-mark" viewBox="0 0 28 28" width="22" height="22"><circle cx="14" cy="14" r="13" fill="none" stroke="var(--copper)" stroke-width="2"/><path d="M14 6v5M14 17v5M6 14h5M17 14h5M9 9l3 3M19 19l-3-3M19 9l-3 3M9 19l3-3" stroke="var(--pcb)" stroke-width="2" stroke-linecap="round"/></svg>
+      EcoTrace
+    </div>
+    <span>Plataforma de rastreabilidade e logística reversa de lixo eletrônico — projeto em fase de pesquisa.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const WEIGHTS = { "Computadores, notebooks e gabinetes": {kg: 6, co2: 12}, "Monitores e telas": {kg: 5, co2: 9}, "Periféricos e cabos": {kg: 0.4, co2: 0.6}, "HDs e SSDs": {kg: 0.3, co2: 1.1}, "Impressoras e multifuncionais": {kg: 8, co2: 10} };
+  let totalKg = 0, totalCo2 = 0, count = 0;
+  const queueEl = document.getElementById('queue');
+  const toastEl = document.getElementById('toast');
+
+  function addItem(){
+    const catEl = document.getElementById('cat');
+    const name = catEl.options[catEl.selectedIndex].text;
+    const qty = Math.max(1, parseInt(document.getElementById('qty').value || '1', 10));
+    const w = WEIGHTS[name] || {kg:1, co2:1};
+    totalKg += w.kg * qty;
+    totalCo2 += w.co2 * qty;
+    count++;
+
+    if(count === 1){ queueEl.innerHTML = ''; }
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${qty}x ${name}</span><span class="tag">agendado</span>`;
+    queueEl.prepend(li);
+
+    document.getElementById('statKg').textContent = Math.round(totalKg) + ' kg';
+    document.getElementById('statCo2').textContent = Math.round(totalCo2) + ' kg';
+
+    showToast('Item adicionado à coleta');
+  }
+
+  function quickCity(city){
+    document.getElementById('cityInput').value = city;
+    updateMapsLink();
+    showToast('Cidade preenchida — toque em "Ver pontos no mapa"');
+  }
+
+  function updateMapsLink(){
+    const city = document.getElementById('cityInput').value.trim();
+    const term = city ? `ponto de coleta de lixo eletrônico próximo a ${city}` : 'ponto de coleta de lixo eletrônico';
+    const query = encodeURIComponent(term);
+    document.getElementById('mapsBtn').href = `https://www.google.com/maps/search/?api=1&query=${query}`;
+  }
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2200);
+  }
+</script>
+
+</body>
+</html>
